@@ -6,6 +6,7 @@
 *.lo
 *.o
 *.obj
+*.ko
 
 # Precompiled Headers
 *.gch
@@ -15,6 +16,7 @@
 *.so
 *.dylib
 *.dll
+*.so.*
 
 # Fortran module files
 *.mod
@@ -25,8 +27,47 @@
 *.la
 *.a
 *.lib
+*.lo
 
 # Executables
 *.exe
 *.out
 *.app
+*.elf
+*.i*86
+*.x86_64
+*.hex
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# CMake
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# Bin directory
+bin/
