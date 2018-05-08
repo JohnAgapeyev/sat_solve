@@ -18,14 +18,12 @@ void brute_force_solve(const std::vector<std::vector<int64_t>>& clause_list, con
     unsigned int i = 0;
 
     for (; BN_cmp(solution, max_range) != 1; BN_add_word(solution, 1)) {
-#if 1
         if (i++ % USHRT_MAX == 0) {
             for (int i = 0; i < BN_num_bits(solution); ++i) {
                 std::cout << BN_is_bit_set(solution, i);
             }
             std::cout << "\n";
         }
-#endif
         bool satisfiable = true;
         for (const auto& clause : clause_list) {
             bool result = false;
