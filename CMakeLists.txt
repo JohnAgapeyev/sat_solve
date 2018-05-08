@@ -19,6 +19,10 @@ set(SAT_SOLVE_SOURCES
 
 add_executable(sat_solve ${SAT_SOLVE_SOURCES})
 
+find_package(OpenSSL)
+
+target_link_libraries(sat_solve OpenSSL::SSL OpenSSL::Crypto)
+
 target_include_directories(sat_solve PRIVATE
     src
 )
