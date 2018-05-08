@@ -3,6 +3,8 @@
 #include <fstream>
 #include <cstdint>
 #include <vector>
+#include <iterator>
+#include <algorithm>
 #include "file.h"
 
 /*
@@ -12,7 +14,7 @@
  * https://fairmut3x.wordpress.com/2011/07/29/cnf-conjunctive-normal-form-dimacs-format-explained/
  */
 std::vector<std::vector<int64_t>> read_file(const char *path) {
-    std::ifstream file(path);
+    std::ifstream file{path};
 
     bool in_comments = true;
     int64_t variables = -1;
@@ -43,17 +45,17 @@ std::vector<std::vector<int64_t>> read_file(const char *path) {
             std::cerr << "Problem line was not found in file\n";
             return {};
         }
-        std::istringstream iss{std::move(line)};
-
         int64_t token_num;
         std::vector<int64_t> clause_tokens;
 
-        while (iss >> token_num) {
-            if (token_num == 0) {
-                break;
-            }
-            clause_tokens.emplace_back(std::move(token_num));
-        }
+        std::istringstream iss{std::move(line)};
+
+        clause_tokens.assign(std::istream_iterator<int64_t>(iss),
+                std::istream_iterator<int64_t>());
+        clause_tokens.erase(std::remove(clause_tokens.begin(), clause_tokens.end(), 0), 
+                clause_tokens.end());
+        clause_tokens.shrink_to_fit();
+
         clause_list.emplace_back(std::move(clause_tokens));
     }
 
