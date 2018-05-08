@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <iterator>
+#include <utility>
 #include <algorithm>
 #include "file.h"
 
@@ -13,7 +14,7 @@
  * and
  * https://fairmut3x.wordpress.com/2011/07/29/cnf-conjunctive-normal-form-dimacs-format-explained/
  */
-std::vector<std::vector<int64_t>> read_file(const char *path) {
+std::pair<std::vector<std::vector<int64_t>>, int64_t> read_file(const char *path) {
     std::ifstream file{path};
 
     bool in_comments = true;
@@ -52,12 +53,12 @@ std::vector<std::vector<int64_t>> read_file(const char *path) {
 
         clause_tokens.assign(std::istream_iterator<int64_t>(iss),
                 std::istream_iterator<int64_t>());
-        clause_tokens.erase(std::remove(clause_tokens.begin(), clause_tokens.end(), 0), 
+        clause_tokens.erase(std::remove(clause_tokens.begin(), clause_tokens.end(), 0),
                 clause_tokens.end());
         clause_tokens.shrink_to_fit();
 
         clause_list.emplace_back(std::move(clause_tokens));
     }
 
-    return clause_list;
+    return {clause_list, variables};
 }

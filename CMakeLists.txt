@@ -14,6 +14,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(SAT_SOLVE_SOURCES
     src/main.cpp
     src/file.cpp
+    src/brute.cpp
 )
 
 add_executable(sat_solve ${SAT_SOLVE_SOURCES})
