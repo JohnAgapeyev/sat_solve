@@ -3,6 +3,13 @@
 #include <algorithm>
 #include "implication.h"
 
+//This list is needed for generation of the conflict clause that is learnt
+std::vector<decision> arbitrary_choices;
+
+//Choice list is filled at initialization with all variables, which are incrementally updated
+//Conflict is determined by attempting to add a decision to the choice list that is contradicting
+std::vector<decision> variable_status;
+
 //Returns true if conflict is found, and updates variable_status with implicit decisions based on the current status
 bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& variable_status) noexcept {
     bool variable_set = false;
@@ -52,5 +59,15 @@ void backtrack(std::vector<decision>& arbitrary_choices, std::vector<decision>& 
     clause_list.emplace_back(std::move(learnt_clause));
 
     //Handle backtracking scheme here
+    //Need to backtrack to just before last made decision
+    //AKA decisions 12345 would result in 123, where 4 is now the opposite value
+
+    if (arbitrary_choices.size() < 2) {
+        arbitrary_choices.clear();
+    } else {
+        //Delete the last 2 elements
+        arbitrary_choices.pop_back();
+        arbitrary_choices.pop_back();
+    }
 }
 

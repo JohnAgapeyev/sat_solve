@@ -16,6 +16,7 @@ set(SAT_SOLVE_SOURCES
     src/file.cpp
     src/brute.cpp
     src/implication.cpp
+    src/cdcl.cpp
 )
 
 add_executable(sat_solve ${SAT_SOLVE_SOURCES})
