@@ -49,13 +49,14 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
     std::cout << "Solution:\n";
     for (const auto& dec : variable_status) {
         if (dec.value == state::TRUE) {
-            std::cout << dec.variable << " ";
+            std::cout << dec.variable + 1 << " ";
         } else if (dec.value == state::FALSE) {
-            std::cout << -dec.variable << " ";
+            std::cout << -(dec.variable + 1) << " ";
         } else {
             std::cerr << "Variable " << dec.variable << " is still undefined\n";
             return;
         }
     }
+    std::cout << std::endl;
 }
 

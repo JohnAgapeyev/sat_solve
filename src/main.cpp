@@ -3,6 +3,8 @@
 
 #include "file.h"
 #include "brute.h"
+#include "implication.h"
+#include "cdcl.h"
 
 int main(int argc, char **argv) {
     if (argc < 2) {
@@ -23,7 +25,13 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    brute_force_solve(clause_list.first, clause_list.second);
+    variable_status.reserve(clause_list.second);
+
+    for (int32_t i = 0; i < clause_list.second; ++i) {
+        variable_status.push_back({i, 0, state::UNDEFINED, false});
+    }
+
+    CDCL_solve(clause_list.first);
 
     return EXIT_SUCCESS;
 }

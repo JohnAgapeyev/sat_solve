@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <vector>
 #include <algorithm>
+#include <iostream>
 #include "implication.h"
 
 //This list is needed for generation of the conflict clause that is learnt
@@ -15,25 +16,28 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
     bool variable_set = false;
     //Repeat the clause loop if a variable is set, since that can change the answer
     do {
+        variable_set = false;
         for (const auto& clause : clause_list) {
             if (std::any_of(clause.cbegin(), clause.cend(),
-                        [&](const auto term){return variable_status[term - 1].value == state::TRUE;})) {
+                        [&](const auto term){return variable_status[std::abs(term) - 1].value == state::TRUE;})) {
                 //Clause is complete, move on
                 continue;
             }
             //I don't like the double linear search here, maybe improve later
             if (std::count_if(clause.cbegin(), clause.cend(),
-                        [&](const auto term){return variable_status[term - 1].value == state::UNDEFINED;}) == 1) {
-                auto term = std::find_if(clause.cbegin(), clause.cend(), [&](const auto term){return variable_status[term - 1].value == state::UNDEFINED;});
+                        [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;}) == 1) {
+                auto term = std::find_if(clause.cbegin(), clause.cend(), [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;});
                 //Unit clause, the decision is forced to set the term to true
-                variable_status[*term - 1].value = state::TRUE;
-                variable_status[*term - 1].chosen_arbitrarily = false;
+                variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
+                variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
                 variable_set = true;
                 continue;
             }
 
             if (std::all_of(clause.cbegin(), clause.cend(),
-                        [&](const auto term){return variable_status[term - 1].value == state::FALSE;})) {
+                        [&](const auto term){
+                            return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::TRUE : state::FALSE);
+                        })) {
                 //Conflict detected
                 return true;
             }
