@@ -19,7 +19,9 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
         variable_set = false;
         for (const auto& clause : clause_list) {
             if (std::any_of(clause.cbegin(), clause.cend(),
-                        [&](const auto term){return variable_status[std::abs(term) - 1].value == state::TRUE;})) {
+                        [&](const auto term){
+                            return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::FALSE : state::TRUE);\
+                        })) {
                 //Clause is complete, move on
                 continue;
             }
@@ -28,9 +30,36 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
                         [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;}) == 1) {
                 auto term = std::find_if(clause.cbegin(), clause.cend(), [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;});
                 //Unit clause, the decision is forced to set the term to true
+                //variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
+                //variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
+                //variable_set = true;
+
+                for (const auto term1 : clause) {
+                    std::cout << term1 << " ";
+                }
+                std::cout << "\n";
+                for (const auto term2 : clause) {
+                    switch(variable_status[std::abs(term2) - 1].value) {
+                        case state::TRUE:
+                            std::cout << 1 << " ";
+                            break;
+                        case state::FALSE:
+                            std::cout << 0 << " ";
+                            break;
+                        default:
+                            std::cout << 'U' << " ";
+                            break;
+                    }
+                    //std::cout << (variable_status[std::abs(term2) -1].value == state::TRUE) << " ";
+                }
+                std::cout << "\n";
+                std::cout << "Setting " << *term << " to True through unit clause\n";
+                //std::cout << variable_status[std::abs(*term) - 1].variable << "\n";
+                
                 variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
                 variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
                 variable_set = true;
+
                 continue;
             }
 
@@ -53,12 +82,13 @@ int32_t conflict_analysis(const std::vector<std::vector<int32_t>>& clause_list, 
 
 //Backtrack according to provided decision level and add the learnt clause to the clause list
 void backtrack(std::vector<decision>& arbitrary_choices, std::vector<decision>& variable_status, std::vector<std::vector<int32_t>>& clause_list) noexcept {
+    std::cout << "Backtracking\n";
     //Learnt clause can be obtained by creating a clause consisting of arbitrary decisions made up to and previously from the current level
     //I might have to add implicit choices made previously as well, not sure though
     //Explicit assignments should cover the implicit choices, at least I hope they do
     std::vector<int32_t> learnt_clause;
     for (const auto choice : arbitrary_choices) {
-        learnt_clause.push_back(choice.variable);
+        learnt_clause.push_back((-1 * (choice.value == state::FALSE)) * (choice.variable + 1));
     }
     clause_list.emplace_back(std::move(learnt_clause));
 
@@ -71,7 +101,10 @@ void backtrack(std::vector<decision>& arbitrary_choices, std::vector<decision>& 
     } else {
         //Delete the last 2 elements
         arbitrary_choices.pop_back();
-        arbitrary_choices.pop_back();
+
+        //Make the opposite choice
+        arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
+        //arbitrary_choices.pop_back();
     }
 }
 

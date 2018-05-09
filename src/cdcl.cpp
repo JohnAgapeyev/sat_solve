@@ -8,7 +8,7 @@
 decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& arbitrary_choices, std::vector<decision>& variable_status, const int32_t decision_level) noexcept {
     auto elem = std::find_if(variable_status.begin(), variable_status.end(), [&](const auto& status){return status.value == state::UNDEFINED;});
 
-    elem->value = state::TRUE;
+    elem->value = state::FALSE;
     elem->chosen_arbitrarily = true;
     elem->decision_level = decision_level;
 
@@ -26,13 +26,14 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
     //Run until no variables are undefined
     int32_t decision_level = 0;
     while (std::count_if(variable_status.cbegin(), variable_status.cend(),
-                [&](const auto& status){return status.value == state::UNDEFINED;})) {
+                [&](const auto& status){return status.value == state::UNDEFINED;}) > 0) {
 
         auto d = pick_arbitrarily(clause_list, arbitrary_choices, variable_status, decision_level);
 
         ++decision_level;
 
         if (unit_propagation(clause_list, variable_status)) {
+            std::cout << "Conflict reached\n";
             const auto level = conflict_analysis(clause_list, variable_status);
 
             //Need to backtrack to before start
