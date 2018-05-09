@@ -6,7 +6,7 @@
 #include <openssl/bn.h>
 #include "brute.h"
 
-void brute_force_solve(const std::vector<std::vector<int64_t>>& clause_list, const uint64_t variable_count) {
+void brute_force_solve(const std::vector<std::vector<int32_t>>& clause_list, const uint32_t variable_count) {
     BIGNUM *solution = BN_new();
     BN_zero(solution);
 

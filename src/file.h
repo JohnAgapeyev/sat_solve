@@ -5,6 +5,6 @@
 #include <cstdint>
 #include <utility>
 
-std::pair<std::vector<std::vector<int64_t>>, int64_t> read_file(const char *path);
+std::pair<std::vector<std::vector<int32_t>>, int32_t> read_file(const char *path);
 
 #endif
