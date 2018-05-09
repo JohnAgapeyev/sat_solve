@@ -34,7 +34,7 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
 
         if (unit_propagation(clause_list, variable_status)) {
             std::cout << "Conflict reached\n";
-            const auto level = conflict_analysis(clause_list, variable_status);
+            const auto level = conflict_analysis(clause_list, arbitrary_choices, variable_status);
 
             //Need to backtrack to before start
             if (level < 0) {

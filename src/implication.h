@@ -29,7 +29,7 @@ extern std::vector<decision> variable_status;
 bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& variable_status) noexcept;
 
 //Returns decision level to backtrack to
-int32_t conflict_analysis(const std::vector<std::vector<int32_t>>& clause_list, const std::vector<decision>& variable_status) noexcept;
+int32_t conflict_analysis(const std::vector<std::vector<int32_t>>& clause_list, const std::vector<decision>& arbitrary_choices, const std::vector<decision>& variable_status) noexcept;
 
 //Backtrack according to provided decision level and add the learnt clause to the clause list
 void backtrack(std::vector<decision>& arbitrary_choices, std::vector<decision>& variable_status, std::vector<std::vector<int32_t>>& clause_list) noexcept;

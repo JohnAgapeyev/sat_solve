@@ -55,7 +55,7 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
                 std::cout << "\n";
                 std::cout << "Setting " << *term << " to True through unit clause\n";
                 //std::cout << variable_status[std::abs(*term) - 1].variable << "\n";
-                
+
                 variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
                 variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
                 variable_set = true;
@@ -76,7 +76,7 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
 }
 
 //Returns decision level to backtrack to
-int32_t conflict_analysis(const std::vector<std::vector<int32_t>>& clause_list, const std::vector<decision>& variable_status) noexcept {
+int32_t conflict_analysis(const std::vector<std::vector<int32_t>>& clause_list, const std::vector<decision>& arbitrary_choices, const std::vector<decision>& variable_status) noexcept {
     return 0;
 }
 
