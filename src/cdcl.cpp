@@ -5,12 +5,12 @@
 #include "cdcl.h"
 #include "implication.h"
 
-decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& arbitrary_choices, std::vector<decision>& variable_status, const int32_t decision_level) noexcept {
+decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& arbitrary_choices, std::vector<decision>& variable_status, const int32_t level) noexcept {
     auto elem = std::find_if(variable_status.begin(), variable_status.end(), [&](const auto& status){return status.value == state::UNDEFINED;});
 
     elem->value = state::FALSE;
     elem->chosen_arbitrarily = true;
-    elem->decision_level = decision_level;
+    elem->decision_level = level + 1;
 
     arbitrary_choices.push_back({elem->variable, elem->decision_level, elem->value, elem->chosen_arbitrarily});
 
@@ -18,13 +18,13 @@ decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, 
 }
 
 void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
-    if (unit_propagation(clause_list, variable_status)) {
+    int32_t decision_level = 0;
+    if (unit_propagation(clause_list, variable_status, decision_level)) {
         //Conflict detected at start
         std::cout << "Equation is UNSATISFIABLE\n";
         return;
     }
     //Run until no variables are undefined
-    int32_t decision_level = 0;
     while (std::count_if(variable_status.cbegin(), variable_status.cend(),
                 [&](const auto& status){return status.value == state::UNDEFINED;}) > 0) {
 
@@ -32,9 +32,9 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
 
         ++decision_level;
 
-        if (unit_propagation(clause_list, variable_status)) {
+        if (unit_propagation(clause_list, variable_status, decision_level)) {
             std::cout << "Conflict reached\n";
-            const auto level = conflict_analysis(clause_list, arbitrary_choices, variable_status);
+            const auto level = conflict_analysis(clause_list);
 
             //Need to backtrack to before start
             if (level < 0) {
@@ -42,7 +42,7 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
                 return;
             }
 
-            backtrack(arbitrary_choices, variable_status, clause_list);
+            backtrack(clause_list, level);
         }
     }
     std::cout << "Equation is SATISFIABLE\n";

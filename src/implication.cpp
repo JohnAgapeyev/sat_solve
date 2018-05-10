@@ -12,7 +12,7 @@ std::vector<decision> arbitrary_choices;
 std::vector<decision> variable_status;
 
 //Returns true if conflict is found, and updates variable_status with implicit decisions based on the current status
-bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& variable_status) noexcept {
+bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& variable_status, const int32_t level) noexcept {
     bool variable_set = false;
     //Repeat the clause loop if a variable is set, since that can change the answer
     do {
@@ -58,6 +58,7 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
 
                 variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
                 variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
+                variable_status[std::abs(*term) - 1].decision_level = level;
                 variable_set = true;
 
                 continue;
@@ -76,12 +77,50 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
 }
 
 //Returns decision level to backtrack to
-int32_t conflict_analysis(const std::vector<std::vector<int32_t>>& clause_list, const std::vector<decision>& arbitrary_choices, const std::vector<decision>& variable_status) noexcept {
-    return 0;
+//This needs tweaking obviously
+int32_t conflict_analysis(std::vector<std::vector<int32_t>>& clause_list) noexcept {
+    int32_t backtrack_level = arbitrary_choices.back().decision_level;
+    std::vector<int32_t> learnt_clause;
+    learnt_clause.reserve(arbitrary_choices.size());
+
+    //I know this could be more efficient
+retry:
+    for (const auto choice : arbitrary_choices) {
+        if (choice.decision_level <= backtrack_level) {
+            learnt_clause.push_back((-1 * (choice.value == state::FALSE)) * (choice.variable + 1));
+        }
+    }
+
+    //See if the default already exists
+    if (std::find_if(clause_list.crbegin(), clause_list.crend(),
+                [&](const auto& clause){return clause == learnt_clause;}) != clause_list.crend()) {
+
+        //Make the opposite choice
+        learnt_clause.back() *= -1;
+
+        //Check if the modified exists as well
+        if (std::find_if(clause_list.crbegin(), clause_list.crend(),
+                    [&](const auto& clause){return clause == learnt_clause;}) != clause_list.crend()) {
+
+            //We need to go up a level and retry this
+            --backtrack_level;
+            learnt_clause.clear();
+            if (backtrack_level < 0) {
+                return -1;
+            }
+            goto retry;
+        }
+    }
+
+    clause_list.emplace_back(std::move(learnt_clause));
+
+    //Go back one level
+    return arbitrary_choices.back().decision_level - 1;
 }
 
 //Backtrack according to provided decision level and add the learnt clause to the clause list
-void backtrack(std::vector<decision>& arbitrary_choices, std::vector<decision>& variable_status, std::vector<std::vector<int32_t>>& clause_list) noexcept {
+void backtrack(std::vector<std::vector<int32_t>>& clause_list, const int32_t level) noexcept {
+#if 0
     std::cout << "Backtracking\n";
     //Learnt clause can be obtained by creating a clause consisting of arbitrary decisions made up to and previously from the current level
     //I might have to add implicit choices made previously as well, not sure though
@@ -89,12 +128,24 @@ void backtrack(std::vector<decision>& arbitrary_choices, std::vector<decision>& 
     std::vector<int32_t> learnt_clause;
     for (const auto choice : arbitrary_choices) {
         learnt_clause.push_back((-1 * (choice.value == state::FALSE)) * (choice.variable + 1));
+        //std::cout << "Variable: " << (-1 * (choice.value == state::FALSE)) * (choice.variable + 1) << "\n";
     }
+
+    //for (const auto term : learnt_clause) {
+        //std::cout << term << " ";
+    //}
+    //std::cout << "\n";
+
     clause_list.emplace_back(std::move(learnt_clause));
 
     //Handle backtracking scheme here
     //Need to backtrack to just before last made decision
     //AKA decisions 12345 would result in 123, where 4 is now the opposite value
+
+    for (const auto& d : arbitrary_choices) {
+        std::cout << d.variable << ":" << (d.value == state::TRUE) << " ";
+    }
+    std::cout << "\n";
 
     if (arbitrary_choices.size() < 2) {
         arbitrary_choices.clear();
@@ -106,5 +157,30 @@ void backtrack(std::vector<decision>& arbitrary_choices, std::vector<decision>& 
         arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
         //arbitrary_choices.pop_back();
     }
+
+    for (const auto& d : arbitrary_choices) {
+        std::cout << d.variable << ":" << (d.value == state::TRUE) << " ";
+    }
+    std::cout << "\n";
+#else
+
+    //Remove arbitrary choices up to the backtrack level
+    arbitrary_choices.erase(std::remove_if(arbitrary_choices.begin(), arbitrary_choices.end(),
+            [&, level](const auto& d){return d.decision_level > level;}), arbitrary_choices.end());
+
+    //Replace all implicit choices in that range with undefined state
+    std::transform(variable_status.begin(), variable_status.end(), variable_status.begin(),
+            [=](auto& d){
+                if (d.decision_level > level) {
+                    d.decision_level = 0;
+                    d.value = state::UNDEFINED;
+                }
+                return d;
+            });
+
+    //Make the opposite choice at the backtrack level
+    arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
+
+#endif
 }
 

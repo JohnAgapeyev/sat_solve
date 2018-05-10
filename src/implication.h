@@ -26,13 +26,13 @@ extern std::vector<decision> arbitrary_choices;
 extern std::vector<decision> variable_status;
 
 //Returns true if conflict is found, and updates variable_status with implicit decisions based on the current status
-bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& variable_status) noexcept;
+bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& variable_status, const int32_t level) noexcept;
 
 //Returns decision level to backtrack to
-int32_t conflict_analysis(const std::vector<std::vector<int32_t>>& clause_list, const std::vector<decision>& arbitrary_choices, const std::vector<decision>& variable_status) noexcept;
+int32_t conflict_analysis(std::vector<std::vector<int32_t>>& clause_list) noexcept;
 
 //Backtrack according to provided decision level and add the learnt clause to the clause list
-void backtrack(std::vector<decision>& arbitrary_choices, std::vector<decision>& variable_status, std::vector<std::vector<int32_t>>& clause_list) noexcept;
+void backtrack(std::vector<std::vector<int32_t>>& clause_list, const int32_t level) noexcept;
 
 
 #if 0
