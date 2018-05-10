@@ -20,7 +20,7 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
         for (const auto& clause : clause_list) {
             if (std::any_of(clause.cbegin(), clause.cend(),
                         [&](const auto term){
-                            return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::FALSE : state::TRUE);\
+                        return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::FALSE : state::TRUE);\
                         })) {
                 //Clause is complete, move on
                 continue;
@@ -29,11 +29,13 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
             if (std::count_if(clause.cbegin(), clause.cend(),
                         [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;}) == 1) {
                 auto term = std::find_if(clause.cbegin(), clause.cend(), [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;});
+#if 0
                 //Unit clause, the decision is forced to set the term to true
-                //variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
-                //variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
-                //variable_set = true;
-
+                variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
+                variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
+                variable_status[std::abs(*term) - 1].decision_level = level;
+                variable_set = true;
+#else
                 for (const auto term1 : clause) {
                     std::cout << term1 << " ";
                 }
@@ -60,13 +62,13 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
                 variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
                 variable_status[std::abs(*term) - 1].decision_level = level;
                 variable_set = true;
-
+#endif
                 continue;
             }
 
             if (std::all_of(clause.cbegin(), clause.cend(),
                         [&](const auto term){
-                            return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::TRUE : state::FALSE);
+                        return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::TRUE : state::FALSE);
                         })) {
                 //Conflict detected
                 return true;
@@ -80,46 +82,245 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
 //This needs tweaking obviously
 int32_t conflict_analysis(std::vector<std::vector<int32_t>>& clause_list) noexcept {
     int32_t backtrack_level = arbitrary_choices.back().decision_level;
+    //std::cout << "Start level " << backtrack_level << "\n";
     std::vector<int32_t> learnt_clause;
     learnt_clause.reserve(arbitrary_choices.size());
 
     //I know this could be more efficient
+#if 0
 retry:
     for (const auto choice : arbitrary_choices) {
         if (choice.decision_level <= backtrack_level) {
             learnt_clause.push_back((-1 * (choice.value == state::FALSE)) * (choice.variable + 1));
         }
     }
+    std::cout << "Decision level " << backtrack_level << "\n";
 
     //See if the default already exists
-    if (std::find_if(clause_list.crbegin(), clause_list.crend(),
-                [&](const auto& clause){return clause == learnt_clause;}) != clause_list.crend()) {
-
+    if (std::find(clause_list.crbegin(), clause_list.crend(), learnt_clause) != clause_list.crend()) {
         //Make the opposite choice
         learnt_clause.back() *= -1;
 
         //Check if the modified exists as well
-        if (std::find_if(clause_list.crbegin(), clause_list.crend(),
-                    [&](const auto& clause){return clause == learnt_clause;}) != clause_list.crend()) {
-
+        if (std::find(clause_list.crbegin(), clause_list.crend(), learnt_clause) != clause_list.crend()) {
             //We need to go up a level and retry this
             --backtrack_level;
             learnt_clause.clear();
+
             if (backtrack_level < 0) {
+                std::cout << "Returning -1\n";
                 return -1;
             }
             goto retry;
         }
     }
-
     clause_list.emplace_back(std::move(learnt_clause));
+#else
+#if 0
+    std::vector<int32_t> conflict_clause;
+    for (const auto& clause : clause_list) {
+        if (std::any_of(clause.cbegin(), clause.cend(),
+                    [&](const auto term){
+                    return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::FALSE : state::TRUE);\
+                    })) {
+            //Clause is complete, move on
+            continue;
+        }
+        if (std::all_of(clause.cbegin(), clause.cend(),
+                    [&](const auto term){
+                    return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::TRUE : state::FALSE);
+                    })) {
+            //Conflict detected
+
+            std::cout << "Conflict reached in here\n";
+
+            for (const auto term1 : clause) {
+                std::cout << term1 << " ";
+            }
+            std::cout << "\n";
+
+            conflict_clause.assign(clause.begin(), clause.end());
+
+            break;
+            //return true;
+        }
+    }
+    if (conflict_clause.empty()) {
+        std::cerr << "How could this happen\n";
+        return -1;
+    }
+#endif
+
+    for (const auto choice : arbitrary_choices) {
+        learnt_clause.push_back((-1 * (choice.value == state::FALSE)) * (choice.variable + 1));
+
+#if 0
+        switch(variable_status[std::abs(((-1 * (choice.value == state::FALSE)) * (choice.variable + 1))) - 1].value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+#endif
+    }
+
+    //std::cout << "Got my loop element\n";
+
+    std::cout << "Decision levels:\n";
+    for (const auto term : learnt_clause) {
+        std::cout << variable_status[std::abs(term) - 1].decision_level << " ";
+    }
+    std::cout << "\n";
+    std::cout << "Clause variable status\n";
+    for (const auto term : learnt_clause) {
+        switch(variable_status[std::abs(term) - 1].value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+    }
+    std::cout << "\n";
+
+    auto it = std::max_element(learnt_clause.cbegin(), learnt_clause.cend(),
+            [&](const auto a, const auto b){
+            return variable_status[std::abs(a) - 1].decision_level < variable_status[std::abs(b) - 1].decision_level;
+            });
+    backtrack_level = variable_status[std::abs(*it) - 1].decision_level - 1;
+
+    std::cout << "Chose to backtrack to level " << backtrack_level << "\n";
+
+    //Remove arbitrary choices up to the backtrack level
+    arbitrary_choices.erase(std::remove_if(arbitrary_choices.begin(), arbitrary_choices.end(),
+                [&, backtrack_level](const auto& d){return d.decision_level > backtrack_level;}), arbitrary_choices.end());
+
+    //Replace all implicit choices in that range with undefined state
+    std::transform(variable_status.begin(), variable_status.end(), variable_status.begin(),
+            [&](auto& d){
+            if (d.decision_level > backtrack_level) {
+            d.decision_level = 0;
+            d.value = state::UNDEFINED;
+            }
+            return d;
+            });
+
+    std::cout << "New choice list\n";
+    for (const auto choice : arbitrary_choices) {
+        std::cout << ((-1 * (choice.value == state::FALSE)) * (choice.variable + 1)) << " ";
+    }
+    std::cout << "\n";
+
+    //Make the opposite choice at the backtrack level
+    //arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
+
+    if (std::count_if(learnt_clause.cbegin(), learnt_clause.cend(),
+                [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;}) != 1) {
+        std::cerr << "Result is not a unit clause somehow\n";
+        auto i = std::count_if(learnt_clause.cbegin(), learnt_clause.cend(), [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;});
+        std::cerr << i << "\n";
+    }
+
+    for (const auto& clause : clause_list) {
+        if (std::any_of(clause.cbegin(), clause.cend(),
+                    [&](const auto term){
+                    return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::FALSE : state::TRUE);\
+                    })) {
+            //Clause is complete, move on
+            continue;
+        }
+        if (std::all_of(clause.cbegin(), clause.cend(),
+                    [&](const auto term){
+                    return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::TRUE : state::FALSE);
+                    })) {
+            //Conflict detected
+
+            if (learnt_clause == clause) {
+                std::cout << "Conflict was reesatblished\n";
+            } else {
+                std::cout << "Conflict changed but still exists?";
+            }
+            break;
+        }
+    }
+
+
+    arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
+
+
+
+    std::cout << "Pre prop\n";
+
+
+    //unit_propagation(clause_list, variable_status, backtrack_level);
+
+    std::cout << "Post prop\n";
+    for (const auto& clause : clause_list) {
+        if (std::any_of(clause.cbegin(), clause.cend(),
+                    [&](const auto term){
+                    return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::FALSE : state::TRUE);\
+                    })) {
+            //Clause is complete, move on
+            continue;
+        }
+        if (std::all_of(clause.cbegin(), clause.cend(),
+                    [&](const auto term){
+                    return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::TRUE : state::FALSE);
+                    })) {
+            //Conflict detected
+            if (learnt_clause == clause) {
+                std::cout << "This should never happen\n";
+            } else {
+                std::cout << "This also should never happen\n";
+            }
+            break;
+        }
+    }
+
+    std::cout << "New choice list AGAIN\n";
+    for (const auto choice : arbitrary_choices) {
+        std::cout << ((-1 * (choice.value == state::FALSE)) * (choice.variable + 1)) << " ";
+    }
+    std::cout << "\n";
+    for (const auto choice : arbitrary_choices) {
+        switch(variable_status[std::abs(((-1 * (choice.value == state::FALSE)) * (choice.variable + 1))) - 1].value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+    }
+    std::cout << "\n";
+
+    //return variable_status[std::abs(*it) - 1].decision_level;
+    return backtrack_level;
+
+#endif
+
+    //clause_list.emplace_back(std::move(learnt_clause));
 
     //Go back one level
-    return arbitrary_choices.back().decision_level - 1;
+    //return arbitrary_choices.back().decision_level - 1;
+    //return backtrack_level;
 }
 
 //Backtrack according to provided decision level and add the learnt clause to the clause list
 void backtrack(std::vector<std::vector<int32_t>>& clause_list, const int32_t level) noexcept {
+    //std::cout << "Backtracking\n";
 #if 0
     std::cout << "Backtracking\n";
     //Learnt clause can be obtained by creating a clause consisting of arbitrary decisions made up to and previously from the current level
@@ -132,7 +333,7 @@ void backtrack(std::vector<std::vector<int32_t>>& clause_list, const int32_t lev
     }
 
     //for (const auto term : learnt_clause) {
-        //std::cout << term << " ";
+    //std::cout << term << " ";
     //}
     //std::cout << "\n";
 
@@ -164,22 +365,29 @@ void backtrack(std::vector<std::vector<int32_t>>& clause_list, const int32_t lev
     std::cout << "\n";
 #else
 
+#if 0
     //Remove arbitrary choices up to the backtrack level
     arbitrary_choices.erase(std::remove_if(arbitrary_choices.begin(), arbitrary_choices.end(),
-            [&, level](const auto& d){return d.decision_level > level;}), arbitrary_choices.end());
+                [&, level](const auto& d){return d.decision_level > level;}), arbitrary_choices.end());
 
     //Replace all implicit choices in that range with undefined state
     std::transform(variable_status.begin(), variable_status.end(), variable_status.begin(),
             [=](auto& d){
-                if (d.decision_level > level) {
-                    d.decision_level = 0;
-                    d.value = state::UNDEFINED;
-                }
-                return d;
+            if (d.decision_level > level) {
+            d.decision_level = 0;
+            d.value = state::UNDEFINED;
+            }
+            return d;
             });
 
     //Make the opposite choice at the backtrack level
-    arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
+    //arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
+
+    unit_propagation(clause_list, variable_status, level);
+#else
+    //Do nothing?
+    ;
+#endif
 
 #endif
 }

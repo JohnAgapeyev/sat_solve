@@ -12,6 +12,10 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    for (int i = 1; i < argc; ++i) {
+        variable_status.clear();
+        arbitrary_choices.clear();
+
     auto clause_list = read_file(argv[1]);
 
     if (clause_list.first.empty()) {
@@ -37,6 +41,8 @@ int main(int argc, char **argv) {
     }
 
     CDCL_solve(clause_list.first);
+
+    }
 
     return EXIT_SUCCESS;
 }

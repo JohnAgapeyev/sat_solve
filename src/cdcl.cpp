@@ -12,18 +12,21 @@ decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, 
     elem->chosen_arbitrarily = true;
     elem->decision_level = level + 1;
 
+    std::cout << "Choosing " << elem->variable << "\n";
+
     arbitrary_choices.push_back({elem->variable, elem->decision_level, elem->value, elem->chosen_arbitrarily});
 
     return {elem->variable, elem->decision_level, elem->value, elem->chosen_arbitrarily};
 }
 
 void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
-    int32_t decision_level = 0;
-    if (unit_propagation(clause_list, variable_status, decision_level)) {
+    if (unit_propagation(clause_list, variable_status, 0)) {
         //Conflict detected at start
+        std::cout << "Start\n";
         std::cout << "Equation is UNSATISFIABLE\n";
         return;
     }
+    int32_t decision_level = 1;
     //Run until no variables are undefined
     while (std::count_if(variable_status.cbegin(), variable_status.cend(),
                 [&](const auto& status){return status.value == state::UNDEFINED;}) > 0) {
@@ -42,7 +45,17 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
                 return;
             }
 
+            std::cout << "Start: " << decision_level << "\t" << level << "\n";
+
             backtrack(clause_list, level);
+
+            decision_level = level;
+
+            std::cout << "YES AGAIN\n";
+            for (const auto choice : arbitrary_choices) {
+                std::cout << ((-1 * (choice.value == state::FALSE)) * (choice.variable + 1)) << " ";
+            }
+            std::cout << "\n";
         }
     }
     std::cout << "Equation is SATISFIABLE\n";
