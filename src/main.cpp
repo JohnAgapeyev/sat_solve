@@ -14,6 +14,11 @@ int main(int argc, char **argv) {
 
     auto clause_list = read_file(argv[1]);
 
+    if (clause_list.first.empty()) {
+        std::cerr << "Error reading file\n";
+        return EXIT_FAILURE;
+    }
+
     std::cout << clause_list.first.size() << std::endl;
 #if 0
     for (const auto& clause : clause_list.first) {

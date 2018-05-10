@@ -6,6 +6,7 @@
 #include <iterator>
 #include <utility>
 #include <algorithm>
+#include <cstring>
 #include "file.h"
 
 /*
@@ -16,6 +17,12 @@
  */
 std::pair<std::vector<std::vector<int32_t>>, int32_t> read_file(const char *path) {
     std::ifstream file{path};
+
+    if (!file) {
+        std::cerr << "Unable to open file " << strerror(errno) << "\n";
+        std::cerr << path << "\n";
+        return {};
+    }
 
     bool in_comments = true;
     int32_t variables = -1;
@@ -56,6 +63,10 @@ std::pair<std::vector<std::vector<int32_t>>, int32_t> read_file(const char *path
         clause_tokens.erase(std::remove(clause_tokens.begin(), clause_tokens.end(), 0),
                 clause_tokens.end());
         clause_tokens.shrink_to_fit();
+
+        if (clause_tokens.empty()) {
+            continue;
+        }
 
         clause_list.emplace_back(std::move(clause_tokens));
     }
