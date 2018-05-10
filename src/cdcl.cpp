@@ -8,11 +8,13 @@
 decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& arbitrary_choices, std::vector<decision>& variable_status, const int32_t level) noexcept {
     auto elem = std::find_if(variable_status.begin(), variable_status.end(), [&](const auto& status){return status.value == state::UNDEFINED;});
 
+    std::cout << "Choosing " << elem->variable << "\n";
+    std::cout << "Choosing " << (elem->value == state::UNDEFINED) << "\n";
+
     elem->value = state::FALSE;
     elem->chosen_arbitrarily = true;
     elem->decision_level = level + 1;
 
-    std::cout << "Choosing " << elem->variable << "\n";
 
     arbitrary_choices.push_back({elem->variable, elem->decision_level, elem->value, elem->chosen_arbitrarily});
 
@@ -36,7 +38,7 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
         ++decision_level;
 
         if (unit_propagation(clause_list, variable_status, decision_level)) {
-            std::cout << "Conflict reached\n";
+            //std::cout << "Conflict reached\n";
             const auto level = conflict_analysis(clause_list);
 
             //Need to backtrack to before start
@@ -51,11 +53,13 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
 
             decision_level = level;
 
+#if 0
             std::cout << "YES AGAIN\n";
             for (const auto choice : arbitrary_choices) {
                 std::cout << ((-1 * (choice.value == state::FALSE)) * (choice.variable + 1)) << " ";
             }
             std::cout << "\n";
+#endif
         }
     }
     std::cout << "Equation is SATISFIABLE\n";

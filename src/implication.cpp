@@ -29,7 +29,7 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
             if (std::count_if(clause.cbegin(), clause.cend(),
                         [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;}) == 1) {
                 auto term = std::find_if(clause.cbegin(), clause.cend(), [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;});
-#if 0
+#if 1
                 //Unit clause, the decision is forced to set the term to true
                 variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
                 variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
@@ -152,7 +152,12 @@ retry:
 #endif
 
     for (const auto choice : arbitrary_choices) {
-        learnt_clause.push_back((-1 * (choice.value == state::FALSE)) * (choice.variable + 1));
+        int32_t term = choice.variable + 1;
+        if (choice.value == state::TRUE) {
+            term *= -1;
+        }
+        //learnt_clause.push_back((-1 * (choice.value == state::TRUE)) * (choice.variable + 1));
+        learnt_clause.push_back(term);
 
 #if 0
         switch(variable_status[std::abs(((-1 * (choice.value == state::FALSE)) * (choice.variable + 1))) - 1].value) {
@@ -169,11 +174,40 @@ retry:
 #endif
     }
 
+    std::cout << "Incoming list\n";
+    for (const auto choice : arbitrary_choices) {
+        std::cout << choice.variable << " ";
+    }
+    std::cout << "\n";
+    for (const auto choice : arbitrary_choices) {
+        std::cout << choice.decision_level << " ";
+    }
+    std::cout << "\n";
+    for (const auto choice : arbitrary_choices) {
+        switch(choice.value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+    }
+    std::cout << "\n";
+
     //std::cout << "Got my loop element\n";
 
     std::cout << "Decision levels:\n";
     for (const auto term : learnt_clause) {
         std::cout << variable_status[std::abs(term) - 1].decision_level << " ";
+    }
+    std::cout << "\n";
+    std::cout << "Learnt clause\n";
+    for (const auto term : learnt_clause) {
+        std::cout << term << " ";
     }
     std::cout << "\n";
     std::cout << "Clause variable status\n";
@@ -199,10 +233,28 @@ retry:
     backtrack_level = variable_status[std::abs(*it) - 1].decision_level - 1;
 
     std::cout << "Chose to backtrack to level " << backtrack_level << "\n";
+    for (const auto choice : arbitrary_choices) {
+        std::cout << choice.variable << " ";
+    }
+    std::cout << "\n";
+    for (const auto choice : arbitrary_choices) {
+        switch(choice.value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+    }
+    std::cout << "\n";
 
     //Remove arbitrary choices up to the backtrack level
     arbitrary_choices.erase(std::remove_if(arbitrary_choices.begin(), arbitrary_choices.end(),
-                [&, backtrack_level](const auto& d){return d.decision_level > backtrack_level;}), arbitrary_choices.end());
+                [&](const auto& d){return d.decision_level > backtrack_level;}), arbitrary_choices.end());
 
     //Replace all implicit choices in that range with undefined state
     std::transform(variable_status.begin(), variable_status.end(), variable_status.begin(),
@@ -219,6 +271,10 @@ retry:
         std::cout << ((-1 * (choice.value == state::FALSE)) * (choice.variable + 1)) << " ";
     }
     std::cout << "\n";
+    for (const auto choice : arbitrary_choices) {
+        std::cout << choice.variable << " ";
+    }
+    std::cout << "\n";
 
     //Make the opposite choice at the backtrack level
     //arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
@@ -230,6 +286,7 @@ retry:
         std::cerr << i << "\n";
     }
 
+#if 0
     for (const auto& clause : clause_list) {
         if (std::any_of(clause.cbegin(), clause.cend(),
                     [&](const auto term){
@@ -252,18 +309,20 @@ retry:
             break;
         }
     }
+#endif
 
 
-    arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
+    //arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
 
-
+    clause_list.push_back(learnt_clause);
 
     std::cout << "Pre prop\n";
 
 
-    //unit_propagation(clause_list, variable_status, backtrack_level);
+    unit_propagation(clause_list, variable_status, backtrack_level - 1);
 
     std::cout << "Post prop\n";
+#if 0
     for (const auto& clause : clause_list) {
         if (std::any_of(clause.cbegin(), clause.cend(),
                     [&](const auto term){
@@ -285,14 +344,32 @@ retry:
             break;
         }
     }
+#endif
 
     std::cout << "New choice list AGAIN\n";
     for (const auto choice : arbitrary_choices) {
-        std::cout << ((-1 * (choice.value == state::FALSE)) * (choice.variable + 1)) << " ";
+        //std::cout << ((-1 * (choice.value == state::FALSE)) * (choice.variable + 1)) << " ";
+        std::cout << (choice.variable) << " ";
     }
     std::cout << "\n";
     for (const auto choice : arbitrary_choices) {
-        switch(variable_status[std::abs(((-1 * (choice.value == state::FALSE)) * (choice.variable + 1))) - 1].value) {
+        //switch(variable_status[std::abs(((-1 * (choice.value == state::FALSE)) * (choice.variable + 1))) - 1].value) {
+        switch(choice.value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+    }
+    std::cout << "\n";
+    for (const auto choice : variable_status) {
+        //switch(variable_status[std::abs(((-1 * (choice.value == state::FALSE)) * (choice.variable + 1))) - 1].value) {
+        switch(choice.value) {
             case state::TRUE:
                 std::cout << 1 << " ";
                 break;
