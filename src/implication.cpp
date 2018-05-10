@@ -25,11 +25,12 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
                 //Clause is complete, move on
                 continue;
             }
+            //std::cout << "Undefined count for clause " << (std::count_if(clause.cbegin(), clause.cend(), [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;})) << "\n";
             //I don't like the double linear search here, maybe improve later
             if (std::count_if(clause.cbegin(), clause.cend(),
                         [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;}) == 1) {
                 auto term = std::find_if(clause.cbegin(), clause.cend(), [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;});
-#if 1
+#if 0
                 //Unit clause, the decision is forced to set the term to true
                 variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
                 variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
@@ -232,6 +233,7 @@ retry:
             });
     backtrack_level = variable_status[std::abs(*it) - 1].decision_level - 1;
 
+retry:
     std::cout << "Chose to backtrack to level " << backtrack_level << "\n";
     for (const auto choice : arbitrary_choices) {
         std::cout << choice.variable << " ";
@@ -267,8 +269,8 @@ retry:
             });
 
     std::cout << "New choice list\n";
-    for (const auto choice : arbitrary_choices) {
-        std::cout << ((-1 * (choice.value == state::FALSE)) * (choice.variable + 1)) << " ";
+    for (const auto term : learnt_clause) {
+        std::cout << term << " ";
     }
     std::cout << "\n";
     for (const auto choice : arbitrary_choices) {
@@ -285,6 +287,27 @@ retry:
         auto i = std::count_if(learnt_clause.cbegin(), learnt_clause.cend(), [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;});
         std::cerr << i << "\n";
     }
+
+    std::cout << "CLAUSE RESULT\n";
+    for (const auto term : learnt_clause) {
+        std::cout << term << " ";
+    }
+    std::cout << "\n";
+    for (const auto term : learnt_clause) {
+        switch(variable_status[std::abs(term) - 1].value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+    }
+    std::cout << "\n";
+
 
 #if 0
     for (const auto& clause : clause_list) {
@@ -316,11 +339,56 @@ retry:
 
     clause_list.push_back(learnt_clause);
 
+#if 0
+    std::cout << "CLAUSE RESULT\n";
+    for (const auto term : clause_list.back()) {
+        std::cout << term << " ";
+    }
+    std::cout << "\n";
+    for (const auto term : clause_list.back()) {
+        switch(variable_status[std::abs(term) - 1].value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+    }
+    std::cout << "\n";
+#endif
+
+
+
     std::cout << "Pre prop\n";
+    std::cout << "Size " << clause_list.size() << "\n";
 
 
-    unit_propagation(clause_list, variable_status, backtrack_level - 1);
+    if (unit_propagation(clause_list, variable_status, backtrack_level - 1)) {
+        std::cerr << "Conflict found in bad spot\n";
 
+        if (arbitrary_choices.size() == 1) {
+            //Make the opposite choice
+            arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
+            if (unit_propagation(clause_list, variable_status, backtrack_level - 1)) {
+                //Still have a conflict after changing the base
+                std::cout << "This is hopeless\n";
+            } else {
+                goto skip;
+            }
+        }
+
+        --backtrack_level;
+        if (backtrack_level < 0) {
+            return -1;
+        }
+        goto retry;
+    }
+
+skip:
     std::cout << "Post prop\n";
 #if 0
     for (const auto& clause : clause_list) {
