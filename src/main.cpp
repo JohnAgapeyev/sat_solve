@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
         variable_status.clear();
         arbitrary_choices.clear();
 
-    auto clause_list = read_file(argv[1]);
+    auto clause_list = read_file(argv[i]);
 
     if (clause_list.first.empty()) {
         std::cerr << "Error reading file\n";

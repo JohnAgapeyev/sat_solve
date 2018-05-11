@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include "implication.h"
+#include "cdcl.h"
 
 //This list is needed for generation of the conflict clause that is learnt
 std::vector<decision> arbitrary_choices;
@@ -152,13 +153,25 @@ retry:
     }
 #endif
 
-    for (const auto choice : arbitrary_choices) {
-        int32_t term = choice.variable + 1;
-        if (choice.value == state::TRUE) {
-            term *= -1;
+retry:
+    if (arbitrary_choices.empty()) {
+        std::cout << "Empty choices\n";
+        auto d = pick_arbitrarily(clause_list, arbitrary_choices, variable_status, backtrack_level);
+        if (d.variable > variable_status.size()) {
+            std::cout << "BREAKOUT\n";
+            return 0;
         }
-        //learnt_clause.push_back((-1 * (choice.value == state::TRUE)) * (choice.variable + 1));
-        learnt_clause.push_back(term);
+    }
+
+    for (const auto choice : arbitrary_choices) {
+        //if (choice.decision_level <= backtrack_level) {
+            int32_t term = choice.variable + 1;
+            if (choice.value == state::TRUE) {
+                term *= -1;
+            }
+            //learnt_clause.push_back((-1 * (choice.value == state::TRUE)) * (choice.variable + 1));
+            learnt_clause.push_back(term);
+        //}
 
 #if 0
         switch(variable_status[std::abs(((-1 * (choice.value == state::FALSE)) * (choice.variable + 1))) - 1].value) {
@@ -174,6 +187,7 @@ retry:
         }
 #endif
     }
+
 
     std::cout << "Incoming list\n";
     for (const auto choice : arbitrary_choices) {
@@ -227,13 +241,14 @@ retry:
     }
     std::cout << "\n";
 
+#if 0
     auto it = std::max_element(learnt_clause.cbegin(), learnt_clause.cend(),
             [&](const auto a, const auto b){
             return variable_status[std::abs(a) - 1].decision_level < variable_status[std::abs(b) - 1].decision_level;
             });
     backtrack_level = variable_status[std::abs(*it) - 1].decision_level - 1;
+#endif
 
-retry:
     std::cout << "Chose to backtrack to level " << backtrack_level << "\n";
     for (const auto choice : arbitrary_choices) {
         std::cout << choice.variable << " ";
@@ -251,6 +266,12 @@ retry:
                 std::cout << 'U' << " ";
                 break;
         }
+    }
+    std::cout << "\n";
+
+    std::cout << "Decision levels:\n";
+    for (const auto term : learnt_clause) {
+        std::cout << variable_status[std::abs(term) - 1].decision_level << " ";
     }
     std::cout << "\n";
 
@@ -365,11 +386,44 @@ retry:
 
     std::cout << "Pre prop\n";
     std::cout << "Size " << clause_list.size() << "\n";
+    std::cout << "Size 2 " << arbitrary_choices.size() << "\n";
+
+    for (const auto choice : arbitrary_choices) {
+        //switch(variable_status[std::abs(((-1 * (choice.value == state::FALSE)) * (choice.variable + 1))) - 1].value) {
+        switch(choice.value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+    }
+    std::cout << "\n";
+    for (const auto choice : variable_status) {
+        //switch(variable_status[std::abs(((-1 * (choice.value == state::FALSE)) * (choice.variable + 1))) - 1].value) {
+        switch(choice.value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+    }
+    std::cout << "\n";
 
 
     if (unit_propagation(clause_list, variable_status, backtrack_level - 1)) {
         std::cerr << "Conflict found in bad spot\n";
 
+#if 0
         if (arbitrary_choices.size() == 1) {
             //Make the opposite choice
             arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
@@ -380,11 +434,21 @@ retry:
                 goto skip;
             }
         }
+#endif
 
         --backtrack_level;
         if (backtrack_level < 0) {
             return -1;
+        } else if (backtrack_level == 0) {
+            backtrack_level = 1;
         }
+
+        //Remove arbitrary choices up to the backtrack level
+        arbitrary_choices.erase(std::remove_if(arbitrary_choices.begin(), arbitrary_choices.end(),
+                    [&](const auto& d){return d.decision_level > backtrack_level;}), arbitrary_choices.end());
+
+        learnt_clause.clear();
+
         goto retry;
     }
 

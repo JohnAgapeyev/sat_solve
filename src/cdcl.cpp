@@ -8,6 +8,17 @@
 decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& arbitrary_choices, std::vector<decision>& variable_status, const int32_t level) noexcept {
     auto elem = std::find_if(variable_status.begin(), variable_status.end(), [&](const auto& status){return status.value == state::UNDEFINED;});
 
+    if (elem == variable_status.end()) {
+        std::cout << "Current count " << std::count_if(variable_status.cbegin(), variable_status.cend(), [&](const auto& status){return status.value == state::UNDEFINED;}) << "\n";
+
+#if 0
+        if (std::count_if(variable_status.cbegin(), variable_status.cend(),
+                [&](const auto& status){return status.value == state::UNDEFINED;}) == 0) {
+            return {};
+        }
+#endif
+    }
+
     std::cout << "Choosing " << elem->variable << "\n";
     std::cout << "Choosing " << (elem->value == state::UNDEFINED) << "\n";
 
@@ -32,6 +43,8 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
     //Run until no variables are undefined
     while (std::count_if(variable_status.cbegin(), variable_status.cend(),
                 [&](const auto& status){return status.value == state::UNDEFINED;}) > 0) {
+
+        std::cout << "WE HERE BOYS\n";
 
         auto d = pick_arbitrarily(clause_list, arbitrary_choices, variable_status, decision_level);
 
