@@ -29,11 +29,13 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
             if (std::count_if(clause.cbegin(), clause.cend(),
                         [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;}) == 1) {
                 auto term = std::find_if(clause.cbegin(), clause.cend(), [&](const auto term){return variable_status[std::abs(term) - 1].value == state::UNDEFINED;});
+#if 1
                 //Unit clause, the decision is forced to set the term to true
-                //variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
-                //variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
-                //variable_set = true;
-
+                variable_status[std::abs(*term) - 1].value = (*term < 0) ? state::FALSE : state::TRUE;
+                variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
+                variable_status[std::abs(*term) - 1].decision_level = level;
+                variable_set = true;
+#else
                 for (const auto term1 : clause) {
                     std::cout << term1 << " ";
                 }
@@ -60,7 +62,7 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
                 variable_status[std::abs(*term) - 1].chosen_arbitrarily = false;
                 variable_status[std::abs(*term) - 1].decision_level = level;
                 variable_set = true;
-
+#endif
                 continue;
             }
 
@@ -69,11 +71,13 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
                         return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::TRUE : state::FALSE);
                         })) {
                 //Conflict detected
+#if 0
                 std::cout << "Conflict clause\n";
                 for (const auto term : clause) {
                     std::cout << term << " ";
                 }
                 std::cout << "\n";
+#endif
                 return true;
             }
         }
@@ -90,7 +94,7 @@ int32_t conflict_analysis(std::vector<std::vector<int32_t>>& clause_list) noexce
 
     //I know this could be more efficient
 retry:
-    std::cout << "Learnt clause\n";
+    //std::cout << "Learnt clause\n";
     for (const auto choice : arbitrary_choices) {
         int32_t term = choice.variable + 1;
         if (choice.value == state::TRUE) {
@@ -98,10 +102,10 @@ retry:
         }
         //if (choice.decision_level <= backtrack_level) {
             learnt_clause.push_back(term);
-            std::cout << term << " ";
+            //std::cout << term << " ";
         //}
     }
-    std::cout << "\n";
+    //std::cout << "\n";
     clause_list.push_back(learnt_clause);
 
 #if 0
@@ -141,6 +145,7 @@ retry:
             return d;
             });
 
+#if 0
     for (const auto& d : variable_status) {
         switch(d.value) {
             case state::TRUE:
@@ -155,8 +160,9 @@ retry:
         }
     }
     std::cout << "\n";
+#endif
     if (unit_propagation(clause_list, variable_status, backtrack_level)) {
-        std::cout << "New clause results in conflict\n";
+        //std::cout << "New clause results in conflict\n";
         --backtrack_level;
         learnt_clause.clear();
         clause_list.pop_back();
@@ -167,7 +173,7 @@ retry:
     }
 #endif
 
-    std::cout << "Exiting\n";
+    //std::cout << "Exiting\n";
 
     //clause_list.emplace_back(std::move(learnt_clause));
 
