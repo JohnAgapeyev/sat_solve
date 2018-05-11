@@ -12,6 +12,8 @@ decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, 
     elem->chosen_arbitrarily = true;
     elem->decision_level = level + 1;
 
+    std::cout << "Choosing " << elem->variable + 1 << "\n";
+
     arbitrary_choices.push_back({elem->variable, elem->decision_level, elem->value, elem->chosen_arbitrarily});
 
     return {elem->variable, elem->decision_level, elem->value, elem->chosen_arbitrarily};

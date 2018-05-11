@@ -12,7 +12,9 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    auto clause_list = read_file(argv[1]);
+    for (int i = 1; i < argc; ++i) {
+
+    auto clause_list = read_file(argv[i]);
 
     if (clause_list.first.empty()) {
         std::cerr << "Error reading file\n";
@@ -37,6 +39,10 @@ int main(int argc, char **argv) {
     }
 
     CDCL_solve(clause_list.first);
+
+    variable_status.clear();
+    arbitrary_choices.clear();
+    }
 
     return EXIT_SUCCESS;
 }

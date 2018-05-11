@@ -20,7 +20,7 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
         for (const auto& clause : clause_list) {
             if (std::any_of(clause.cbegin(), clause.cend(),
                         [&](const auto term){
-                            return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::FALSE : state::TRUE);\
+                        return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::FALSE : state::TRUE);\
                         })) {
                 //Clause is complete, move on
                 continue;
@@ -66,9 +66,14 @@ bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std:
 
             if (std::all_of(clause.cbegin(), clause.cend(),
                         [&](const auto term){
-                            return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::TRUE : state::FALSE);
+                        return variable_status[std::abs(term) - 1].value == ((term < 0) ? state::TRUE : state::FALSE);
                         })) {
                 //Conflict detected
+                std::cout << "Conflict clause\n";
+                for (const auto term : clause) {
+                    std::cout << term << " ";
+                }
+                std::cout << "\n";
                 return true;
             }
         }
@@ -85,12 +90,21 @@ int32_t conflict_analysis(std::vector<std::vector<int32_t>>& clause_list) noexce
 
     //I know this could be more efficient
 retry:
+    std::cout << "Learnt clause\n";
     for (const auto choice : arbitrary_choices) {
-        if (choice.decision_level <= backtrack_level) {
-            learnt_clause.push_back((-1 * (choice.value == state::FALSE)) * (choice.variable + 1));
+        int32_t term = choice.variable + 1;
+        if (choice.value == state::TRUE) {
+            term *= -1;
         }
+        //if (choice.decision_level <= backtrack_level) {
+            learnt_clause.push_back(term);
+            std::cout << term << " ";
+        //}
     }
+    std::cout << "\n";
+    clause_list.push_back(learnt_clause);
 
+#if 0
     //See if the default already exists
     if (std::find_if(clause_list.crbegin(), clause_list.crend(),
                 [&](const auto& clause){return clause == learnt_clause;}) != clause_list.crend()) {
@@ -111,11 +125,55 @@ retry:
             goto retry;
         }
     }
+#else
 
-    clause_list.emplace_back(std::move(learnt_clause));
+    //Remove arbitrary choices up to the backtrack level
+    arbitrary_choices.erase(std::remove_if(arbitrary_choices.begin(), arbitrary_choices.end(),
+                [&](const auto& d){return d.decision_level > backtrack_level;}), arbitrary_choices.end());
+
+    //Replace all implicit choices in that range with undefined state
+    std::transform(variable_status.begin(), variable_status.end(), variable_status.begin(),
+            [=](auto& d){
+            if (d.decision_level > backtrack_level) {
+            d.decision_level = 0;
+            d.value = state::UNDEFINED;
+            }
+            return d;
+            });
+
+    for (const auto& d : variable_status) {
+        switch(d.value) {
+            case state::TRUE:
+                std::cout << 1 << " ";
+                break;
+            case state::FALSE:
+                std::cout << 0 << " ";
+                break;
+            default:
+                std::cout << 'U' << " ";
+                break;
+        }
+    }
+    std::cout << "\n";
+    if (unit_propagation(clause_list, variable_status, backtrack_level)) {
+        std::cout << "New clause results in conflict\n";
+        --backtrack_level;
+        learnt_clause.clear();
+        clause_list.pop_back();
+        if (backtrack_level < 0) {
+            return -1;
+        }
+        goto retry;
+    }
+#endif
+
+    std::cout << "Exiting\n";
+
+    //clause_list.emplace_back(std::move(learnt_clause));
 
     //Go back one level
-    return arbitrary_choices.back().decision_level - 1;
+    //return arbitrary_choices.back().decision_level - 1;
+    return backtrack_level;
 }
 
 //Backtrack according to provided decision level and add the learnt clause to the clause list
@@ -132,7 +190,7 @@ void backtrack(std::vector<std::vector<int32_t>>& clause_list, const int32_t lev
     }
 
     //for (const auto term : learnt_clause) {
-        //std::cout << term << " ";
+    //std::cout << term << " ";
     //}
     //std::cout << "\n";
 
@@ -164,22 +222,27 @@ void backtrack(std::vector<std::vector<int32_t>>& clause_list, const int32_t lev
     std::cout << "\n";
 #else
 
+#if 0
     //Remove arbitrary choices up to the backtrack level
     arbitrary_choices.erase(std::remove_if(arbitrary_choices.begin(), arbitrary_choices.end(),
-            [&, level](const auto& d){return d.decision_level > level;}), arbitrary_choices.end());
+                [&, level](const auto& d){return d.decision_level > level;}), arbitrary_choices.end());
 
     //Replace all implicit choices in that range with undefined state
     std::transform(variable_status.begin(), variable_status.end(), variable_status.begin(),
             [=](auto& d){
-                if (d.decision_level > level) {
-                    d.decision_level = 0;
-                    d.value = state::UNDEFINED;
-                }
-                return d;
+            if (d.decision_level > level) {
+            d.decision_level = 0;
+            d.value = state::UNDEFINED;
+            }
+            return d;
             });
 
     //Make the opposite choice at the backtrack level
-    arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
+    //arbitrary_choices.back().value = (arbitrary_choices.back().value == state::TRUE) ? state::FALSE : state::TRUE;
+    //unit_propagation(clause_list, variable_status, level);
+#else
+    ;
+#endif
 
 #endif
 }
