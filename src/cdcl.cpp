@@ -5,7 +5,7 @@
 #include "cdcl.h"
 #include "implication.h"
 
-decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& arbitrary_choices, std::vector<decision>& variable_status, const int32_t level) noexcept {
+decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, const int32_t level) noexcept {
     auto elem = std::find_if(variable_status.begin(), variable_status.end(), [&](const auto& status){return status.value == state::UNDEFINED;});
 
     elem->value = state::FALSE;
@@ -30,7 +30,7 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
     while (std::count_if(variable_status.cbegin(), variable_status.cend(),
                 [&](const auto& status){return status.value == state::UNDEFINED;}) > 0) {
 
-        auto d = pick_arbitrarily(clause_list, arbitrary_choices, variable_status, decision_level);
+        auto d = pick_arbitrarily(clause_list, decision_level);
 
         ++decision_level;
 
