@@ -21,7 +21,7 @@ decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, 
 
 void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
     int32_t decision_level = 0;
-    if (unit_propagation(clause_list, variable_status, decision_level)) {
+    if (unit_propagation(clause_list, -1)) {
         //Conflict detected at start
         std::cout << "Equation is UNSATISFIABLE\n";
         return;
@@ -34,7 +34,7 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
 
         ++decision_level;
 
-        if (unit_propagation(clause_list, variable_status, decision_level)) {
+        if (unit_propagation(clause_list, decision_level)) {
             std::cout << "Conflict reached\n";
             const auto level = conflict_analysis(clause_list);
 

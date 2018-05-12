@@ -12,7 +12,8 @@ std::vector<decision> arbitrary_choices;
 std::vector<decision> variable_status;
 
 //Returns true if conflict is found, and updates variable_status with implicit decisions based on the current status
-bool unit_propagation(const std::vector<std::vector<int32_t>>& clause_list, std::vector<decision>& variable_status, const int32_t level) noexcept {
+bool unit_propagation(std::vector<std::vector<int32_t>> clause_list, const int32_t level) noexcept {
+
     bool variable_set = false;
     //Repeat the clause loop if a variable is set, since that can change the answer
     do {
@@ -58,12 +59,12 @@ int32_t conflict_analysis(std::vector<std::vector<int32_t>>& clause_list) noexce
 
     //I know this could be more efficient
 retry:
-    for (const auto choice : arbitrary_choices) {
+    for (const auto& choice : arbitrary_choices) {
         int32_t term = choice.variable + 1;
         if (choice.value == state::TRUE) {
             term *= -1;
         }
-        learnt_clause.push_back(term);
+        learnt_clause.emplace_back(std::move(term));
     }
     clause_list.push_back(learnt_clause);
 
@@ -73,7 +74,7 @@ retry:
 
     //Replace all implicit choices in that range with undefined state
     std::transform(variable_status.begin(), variable_status.end(), variable_status.begin(),
-            [=](auto& d){
+            [backtrack_level](auto& d){
             if (d.decision_level > backtrack_level) {
             d.decision_level = 0;
             d.value = state::UNDEFINED;
@@ -81,7 +82,7 @@ retry:
             return d;
             });
 
-    if (unit_propagation(clause_list, variable_status, backtrack_level)) {
+    if (unit_propagation(clause_list, backtrack_level)) {
         --backtrack_level;
         learnt_clause.clear();
         clause_list.pop_back();
