@@ -9,4 +9,6 @@ decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, 
 
 void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept;
 
+void preprocess(std::vector<std::vector<int32_t>>& clause_list) noexcept;
+
 #endif
