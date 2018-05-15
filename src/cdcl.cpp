@@ -49,6 +49,8 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
         std::cout << "Equation is UNSATISFIABLE\n";
         return;
     }
+    uint64_t conflict_count = 0;
+    uint64_t restart_bound = 100;
     //Run until no variables are undefined
     while (std::count_if(variable_status.cbegin(), variable_status.cend(),
                 [&](const auto& status){return status.value == state::UNDEFINED;}) > 0) {
@@ -59,15 +61,29 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
 
         if (unit_propagation(clause_list, decision_level)) {
             std::cout << "Conflict reached\n";
-            const auto level = conflict_analysis(clause_list);
+            if (++conflict_count % restart_bound == 0) {
+                std::cout << "Restarting\n";
+                //Time to restart
+                arbitrary_choices.clear();
 
-            //Need to backtrack to before start
-            if (level < 0) {
-                std::cout << "Equation is UNSATISFIABLE\n";
-                return;
+                for (auto& d : variable_status) {
+                    if (d.decision_level > -1) {
+                        d.value = state::UNDEFINED;
+                    }
+                }
+
+                restart_bound *= 1.15;
+            } else {
+                const auto level = conflict_analysis(clause_list);
+
+                //Need to backtrack to before start
+                if (level < 0) {
+                    std::cout << "Equation is UNSATISFIABLE\n";
+                    return;
+                }
+
+                backtrack(clause_list, level);
             }
-
-            backtrack(clause_list, level);
         }
     }
     std::cout << "Equation is SATISFIABLE\n";
