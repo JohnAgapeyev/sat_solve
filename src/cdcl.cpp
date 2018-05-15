@@ -5,18 +5,43 @@
 #include "cdcl.h"
 #include "implication.h"
 
-decision pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, const int32_t level) noexcept {
-    auto elem = std::find_if(variable_status.begin(), variable_status.end(), [&](const auto& status){return status.value == state::UNDEFINED;});
+void pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, const int32_t level) noexcept {
+    std::vector<decision> variable_heap{variable_status};
 
-    elem->value = state::FALSE;
-    elem->chosen_arbitrarily = true;
-    elem->decision_level = level + 1;
+    std::vector<int> counts;
+    for (const auto& d : variable_status) {
+        counts.push_back(std::count_if(clause_list.cbegin(), clause_list.cend(),
+                    [&](const auto& clause){
+                        return std::count_if(clause.cbegin(), clause.cend(),
+                                [&](const auto term){
+                                    return std::abs(term) - 1 == d.variable;
+                                });
+                        }));
+    }
 
-    std::cout << "Choosing " << elem->variable + 1 << "\n";
+    std::make_heap(variable_heap.begin(), variable_heap.end(),
+            [&](const auto& lhs, const auto& rhs){
+                return counts[lhs.variable] < counts[rhs.variable];
+            });
 
-    arbitrary_choices.push_back({elem->variable, elem->decision_level, elem->value, elem->chosen_arbitrarily});
+retry:
+    std::pop_heap(variable_heap.begin(), variable_heap.end(),
+            [&](const auto& lhs, const auto& rhs){
+                return counts[lhs.variable] < counts[rhs.variable];
+            });
 
-    return {elem->variable, elem->decision_level, elem->value, elem->chosen_arbitrarily};
+    if (variable_heap.back().value != state::UNDEFINED) {
+        variable_heap.pop_back();
+        goto retry;
+    }
+
+    variable_status[variable_heap.back().variable].value = state::FALSE;
+    variable_status[variable_heap.back().variable].chosen_arbitrarily = true;
+    variable_status[variable_heap.back().variable].decision_level = level + 1;
+
+    std::cout << "Choosing " << variable_status[variable_heap.back().variable].variable + 1 << "\n";
+
+    arbitrary_choices.push_back({variable_status[variable_heap.back().variable].variable, variable_status[variable_heap.back().variable].decision_level, variable_status[variable_heap.back().variable].value, variable_status[variable_heap.back().variable].chosen_arbitrarily});
 }
 
 void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
@@ -31,7 +56,7 @@ void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
     while (std::count_if(variable_status.cbegin(), variable_status.cend(),
                 [&](const auto& status){return status.value == state::UNDEFINED;}) > 0) {
 
-        auto d = pick_arbitrarily(clause_list, decision_level);
+        pick_arbitrarily(clause_list, decision_level);
 
         ++decision_level;
 
