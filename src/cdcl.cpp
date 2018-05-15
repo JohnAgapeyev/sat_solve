@@ -9,26 +9,24 @@ void pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, cons
     std::vector<decision> variable_heap{variable_status};
 
     std::vector<int> counts;
+    counts.reserve(variable_status.size());
+
     for (const auto& d : variable_status) {
         counts.push_back(std::count_if(clause_list.cbegin(), clause_list.cend(),
                     [&](const auto& clause){
-                        return std::count_if(clause.cbegin(), clause.cend(),
-                                [&](const auto term){
-                                    return std::abs(term) - 1 == d.variable;
-                                });
-                        }));
+                    return std::count_if(clause.cbegin(), clause.cend(),
+                            [&](const auto term){
+                            return std::abs(term) - 1 == d.variable;
+                            });
+                    }));
     }
 
-    std::make_heap(variable_heap.begin(), variable_heap.end(),
-            [&](const auto& lhs, const auto& rhs){
-                return counts[lhs.variable] < counts[rhs.variable];
-            });
+    const auto heap_compare = [&](const auto& lhs, const auto& rhs){return counts[lhs.variable] < counts[rhs.variable];};
+
+    std::make_heap(variable_heap.begin(), variable_heap.end(), heap_compare);
 
 retry:
-    std::pop_heap(variable_heap.begin(), variable_heap.end(),
-            [&](const auto& lhs, const auto& rhs){
-                return counts[lhs.variable] < counts[rhs.variable];
-            });
+    std::pop_heap(variable_heap.begin(), variable_heap.end(), heap_compare);
 
     if (variable_heap.back().value != state::UNDEFINED) {
         variable_heap.pop_back();
@@ -41,7 +39,10 @@ retry:
 
     std::cout << "Choosing " << variable_status[variable_heap.back().variable].variable + 1 << "\n";
 
-    arbitrary_choices.push_back({variable_status[variable_heap.back().variable].variable, variable_status[variable_heap.back().variable].decision_level, variable_status[variable_heap.back().variable].value, variable_status[variable_heap.back().variable].chosen_arbitrarily});
+    arbitrary_choices.push_back({variable_status[variable_heap.back().variable].variable,
+            variable_status[variable_heap.back().variable].decision_level,
+            variable_status[variable_heap.back().variable].value,
+            variable_status[variable_heap.back().variable].chosen_arbitrarily});
 }
 
 void CDCL_solve(std::vector<std::vector<int32_t>>& clause_list) noexcept {
