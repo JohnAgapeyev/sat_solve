@@ -2,23 +2,19 @@
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
+#include <memory>
 #include "cdcl.h"
 #include "implication.h"
 
 void pick_arbitrarily(const std::vector<std::vector<int32_t>>& clause_list, const int32_t level) noexcept {
     std::vector<decision> variable_heap{variable_status};
 
-    std::vector<int> counts;
-    counts.reserve(variable_status.size());
+    std::vector<unsigned long> counts{variable_status.size(), 0, std::allocator<unsigned long>()};
 
-    for (const auto& d : variable_status) {
-        counts.push_back(std::count_if(clause_list.cbegin(), clause_list.cend(),
-                    [&](const auto& clause){
-                    return std::count_if(clause.cbegin(), clause.cend(),
-                            [&](const auto term){
-                            return std::abs(term) - 1 == d.variable;
-                            });
-                    }));
+    for (const auto& clause : clause_list) {
+        for (const auto term : clause) {
+            counts[std::abs(term) - 1]++;
+        }
     }
 
     const auto heap_compare = [&](const auto& lhs, const auto& rhs){return counts[lhs.variable] < counts[rhs.variable];};
